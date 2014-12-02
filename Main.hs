@@ -5,7 +5,7 @@ module Main where
 import           Control.Concurrent.MVar
 import           Control.Exception              (fromException, handle)
 import           Control.Monad
-import           Data.List                      (delete)
+-- import           Data.List                      (delete)
 import           Data.Monoid
 import           Data.Text                      (Text)
 import qualified Data.Text                      as T
@@ -16,7 +16,6 @@ import qualified Network.Wai.Handler.WebSockets as WaiWS
 import           Network.Wai.Middleware.Static
 import qualified Network.WebSockets             as WS
 import           Prelude                        hiding (log)
--- import Control.Monad.IO.Class (liftIO)
 
 type AppState = MVar [WS.Connection]
 
@@ -48,13 +47,12 @@ wsApp state pending = do
                  <> T.pack (show (length l)) :: Text
     broadcast state msg'
 
-    talk conn state
+    talk conn
   where
-    talk :: WS.Connection -> AppState -> IO ()
-    talk conn state = handle catchDisconnect $
+    talk :: WS.Connection -> IO ()
+    talk conn = handle catchDisconnect $
         forever $ do
             msg <- WS.receiveData conn
-            l <- readMVar state
             broadcast state ("Someone sent a message: " <> msg)
       where
         catchDisconnect e = case fromException e of
@@ -65,7 +63,7 @@ wsApp state pending = do
             _ -> return ()
 
 removeClient :: WS.Connection -> AppState -> IO ()
-removeClient conn state = return ()
+removeClient _ _ = return ()
   -- modifyMVar_ state $ \l -> return (delete conn l)
 
 broadcast :: AppState -> Text -> IO ()
